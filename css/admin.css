@@ -1,0 +1,90 @@
+/* --- 1. TARJETAS DE ADMINISTRACIÓN (CARDS) --- */
+.admin-card {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 25px;
+    border-radius: 20px;
+    border: 1px solid rgba(30, 64, 175, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.admin-card h4 {
+    margin-top: 0;
+    color: #60a5fa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* --- 2. TABLAS OSCURAS --- */
+table {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th {
+    background: rgba(255, 255, 255, 0.05);
+    color: #60a5fa;
+    padding: 18px;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-align: left;
+}
+
+td {
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+}
+
+tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* --- 3. BOTONES DE ACCIÓN RÁPIDA --- */
+.btn-pago, .btn-asistencia {
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 5px;
+}
+
+.btn-pago {
+    background: #059669; /* Verde esmeralda */
+    color: white;
+}
+
+.btn-asistencia {
+    background: #2ecc71;
+    color: white;
+}
+
+/* Estilo para el botón de la moneda en la tabla */
+td button {
+    background: #1e40af;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+td button:hover {
+    background: #3b82f6;
+}
+
+/* --- 4. LISTA DE TÉCNICAS (BIBLIOTECA) --- */
+#tabla-tecnicas-container table tr.visto {
+    background: rgba(59, 130, 246, 0.1);
+}

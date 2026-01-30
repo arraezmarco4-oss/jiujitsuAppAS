@@ -1,0 +1,110 @@
+<!DOCTYPE html> 
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BJJ Academy - Panel de Control 2025</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com" rel="stylesheet">
+    <!-- 1. CARGA DE LOS 4 ARCHIVOS CSS ORDENADOS -->
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/bjj-components.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+    <nav class="navbar">
+        <div class="logo">BJJ Academy</div>
+        <div class="carousel">
+            <div class="track">
+                <img src="img/as_logo.jpg" alt="Logo">
+                <img src="img/kings_logo.png" alt="Logo">
+                <img src="img/moya_logo.jpg" alt="Logo">
+                <img src="img/as_logo.jpg" alt="Logo">
+                <img src="img/kings_logo.png" alt="Logo">
+                <img src="img/as_logo.jpg" alt="Logo">
+                <img src="img/kings_logo.png" alt="Logo">
+                <img src="img/moya_logo.jpg" alt="Logo">
+                <img src="img/as_logo.jpg" alt="Logo">
+                <img src="img/kings_logo.png" alt="Logo">
+            </div>
+        </div>
+    </nav>
+
+    <!-- PANTALLA DE ACCESO (LOGIN) -->
+    <div id="pantalla-login">
+        <div id="bienvenida-inicial">
+            <h1>BJJ ACADEMY</h1>
+            <button onclick="mostrarFormulario()" class="btn-comenzar">ACCEDER AL PANEL</button>
+        </div>
+
+        <div id="contenedor-formulario" class="login-card" style="display: none;">
+            <div class="login-header">
+                <img src="img/as_logo.jpg" alt="Logo" class="login-logo">
+                <h1>Iniciar Sesión</h1>
+                <p>Ingresa tus credenciales</p>
+            </div>
+            <div class="login-form">
+                <input id="usuario" type="text" placeholder="Nombre de usuario" class="modern-input">
+                <input id="clave" type="password" placeholder="Contraseña" class="modern-input">
+                <button onclick="validarLogin()" class="btn-login">ENTRAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL DE LA APP -->
+    <div id="pantalla-app" style="display: none;">
+        
+        <!-- MENÚ HAMBURGUESA -->
+        <div class="menu-container">
+            <div class="menu-icon" onclick="toggleMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            <div id="dropdown-menu" class="dropdown-content">
+                <a href="#" onclick="cambiarSeccion('perfil')">👤 Mi Perfil</a>
+                <a href="#" onclick="cambiarSeccion('tecnicas')">🥋 Técnicas</a>
+                <a href="#" onclick="cambiarSeccion('registro')">📝 Registro / Admin</a>
+                <a href="#" onclick="cambiarSeccion('fechas')">📅 Horarios</a>
+                <a href="#" onclick="cambiarSeccion('video')">🎥 Videos</a>
+                <button onclick="cerrarSesion()" class="btn-cerrar-menu">Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <h2 id="titulo-seccion" style="text-align: center; margin-top: 30px; color: #ffffff;">Panel de Control</h2>
+        
+<div id="contenido-dinamico" style="padding: 10px;">
+    
+    <!-- 1. SECCIÓN DE CINTA (Solo para perfil de Alumnos) -->
+    <div id="contenedor-cinta" style="display:none; margin-bottom: 30px;">
+        <h2 id="nombre-usuario-perfil" style="text-align:center; color:#ffffff; margin-bottom:5px; font-family: sans-serif; text-transform: uppercase;"></h2>
+        <p id="label-grado" style="text-align:center; font-weight:bold; margin-bottom:10px; font-family: sans-serif;"></p>
+        
+        <div class="cinta-bjj" id="cinta-bjj">
+            <div id="progreso-cinta" class="progreso-cinta"></div>
+            <div class="puntera-negra"></div>
+            <div id="grados-cinta" class="grados-cinta"></div>
+        </div>
+    </div>
+
+
+    <!-- 3. OTRAS SECCIONES (Técnicas, Listas, etc.) -->
+    <div id="calendario-tecnicas" class="grid-calendario" style="display:none;"></div>
+    
+    <ul id="lista" style="padding:0; list-style: none;"></ul>
+    <div id="info-adicional"></div>
+</div>
+
+
+    <!-- 2. CARGA DE LIBRERÍAS (SUPABASE Y EXCEL) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
+    <!-- 3. CARGA DEL SCRIPT PRINCIPAL COMO MÓDULO -->
+    <script type="module" src="js/script.js"></script>
+</body>
+</html>

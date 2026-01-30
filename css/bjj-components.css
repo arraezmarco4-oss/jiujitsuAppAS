@@ -1,0 +1,91 @@
+/* --- 1. CONTENEDOR PRINCIPAL DE LA APP --- */
+#pantalla-app {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#titulo-seccion {
+    font-family: 'Kanit', sans-serif;
+    font-style: italic;
+    font-size: 2rem;
+    text-align: center;
+    margin: 30px 0;
+    color: #ffffff;
+}
+
+/* --- 2. LA CINTA DE BJJ (CORREGIDA PARA 2026) --- */
+.cinta-bjj {
+    width: 100%;
+    height: 48px;
+    /* Dejamos el fondo en blanco roto para que resalten los colores */
+    background-color: #f0f0f0; 
+    border: 2px solid #333;
+    border-radius: 10px;
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    margin-bottom: 20px;
+}
+
+.progreso-cinta {
+    /* Eliminamos el degradado fijo para que JS inyecte el color real */
+    height: 100%;
+    width: 0%; 
+    /* Transición suave para que la barra "crezca" al entrar */
+    transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+}
+
+.puntera-negra {
+    position: absolute;
+    right: 0;
+    width: 90px;
+    height: 100%;
+    background: #000000;
+    border-left: 3px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.grados-cinta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#calendario-tecnicas {
+    display: grid !important;
+    /* 7 columnas de 40px cada una para que sea ancho y legible */
+    grid-template-columns: repeat(7, 40px) !important;
+    /* Filas de 40px para que sean cuadrados perfectos */
+    grid-auto-rows: 40px; 
+    
+    gap: 12px; /* Espacio amplio entre días */
+    padding: 30px; 
+    background: rgba(0, 0, 0, 0.4); /* Fondo más oscuro para resaltar los colores */
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    width: fit-content;
+    margin: 30px auto;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Sombra para darle profundidad */
+}
+
+.cal-box {
+    /* Tamaño aumentado a 40px */
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px; /* Bordes más curvos y modernos */
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.cal-box:hover {
+    transform: translateY(-5px) scale(1.1); /* Efecto de elevación */
+    filter: brightness(1.4);
+    cursor: pointer;
+}
