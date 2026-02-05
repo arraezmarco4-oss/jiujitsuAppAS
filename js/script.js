@@ -1006,3 +1006,52 @@ window.cargarForo = cargarForo;
 window.enviarMensajeForo = enviarMensajeForo;
 window.eliminarMensajeForo = eliminarMensajeForo;
 
+export async function crearNuevaClaseDB(nombre, fecha, hora) {
+    const fechaHoraISO = `${fecha}T${hora}:00`; // Formato compatible con Timestamptz
+
+    const { data, error } = await _supabase
+        .from('clases')
+        .insert([{ 
+            nombre_clase: nombre, 
+            fecha_hora: fechaHoraISO 
+        }]);
+
+    if (error) {
+        console.error("Error en Supabase:", error.message);
+        throw error;
+    }
+    return data;
+}
+
+// Asegúrate de exponerla si la usas desde el HTML directamente
+window.crearNuevaClaseDB = crearNuevaClaseDB;
+export async function registrarClaseYAsistencia(datos) {
+    const { nombre, fecha, hora, id_tecnica, usuario_alumno, instructor } = datos;
+    const fechaHoraISO = `${fecha}T${hora}:00`;
+
+    // 1. Guarda en historial de la academia
+    const { data: claseData, error: errorClase } = await _supabase
+        .from('clases')
+        .insert([{ 
+            nombre_clase: nombre, 
+            fecha_hora: fechaHoraISO, 
+            id_tecnica: id_tecnica,
+            registrado_por: instructor
+        }]);
+
+    if (errorClase) throw errorClase;
+
+    // 2. Guarda en el progreso del alumno (Tabla que ya tenías)
+    const { error: errorProgreso } = await _supabase
+        .from('progreso_alumnos')
+        .insert([{
+            id_tecnica: id_tecnica,
+            usuario: usuario_alumno,
+            registrado_por: instructor
+        }]);
+
+    if (errorProgreso) throw errorProgreso;
+
+    return claseData;
+}
+window.registrarClaseYAsistencia = registrarClaseYAsistencia;

@@ -4,6 +4,7 @@ import { USUARIO_IDENTIFICADO } from './auth.js';
 // 1. DEFINICIÓN DE NIVELES (Pégalo arriba de todo en ui.js)
 const CINTAS = [
     { nombre: "Blanca", color: "#ffffff", clases_inicio: 0, clases_fin: 160 },
+     { nombre: "Verde", color: "#22c55e", clases_inicio: -100, clases_fin: -1 },
     { nombre: "Azul", color: "#0055ff", clases_inicio: 161, clases_fin: 480 },
     { nombre: "Morada", color: "#8b5cf6", clases_inicio: 481, clases_fin: 800 },
     { nombre: "Marrón", color: "#5d4037", clases_inicio: 801, clases_fin: 1200 },
@@ -207,8 +208,49 @@ if (window.cargarForo) window.cargarForo();
                 </div>
             </div>
         </div>
+         <!-- 4. GRUPO: REGISTRO DE CLASES Y ASISTENCIA -->
+        <div class="grupo-maestro">
+            <div class="barra-maestra" style="border-left-color: #f1c40f;" onclick="toggleAcordeon('grupo-calendario')">🥋 REGISTRO DE CLASES <span>▼</span></div>
+            <div id="grupo-calendario" class="contenido-grupo">
+                
+                <div class="barra-admin" onclick="toggleAcordeon('sec-programar-clase')">Nueva Clase +</div>
+                <div id="sec-programar-clase" class="bloque-admin">
+                    <label>Nombre de la Clase:</label>
+                    <input type="text" id="clase-nombre" placeholder="Ej: Clase Matutina / Open Mat" class="modern-input">
+                    
+                    <label>Técnica Vista:</label>
+                    <select id="clase-tecnica-id" class="modern-input">
+                        <option value="">Seleccione técnica...</option>
+                    </select>
 
-        <!-- 4. GRUPO: EVALUACIÓN Y COMUNICACIÓN -->
+                    <label>Alumno que Asistió:</label>
+                    <select id="clase-alumno-usuario" class="modern-input">
+                        <option value="">Seleccione alumno...</option>
+                    </select>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label>Fecha:</label>
+                            <input type="date" id="clase-fecha" class="modern-input">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Hora:</label>
+                            <input type="time" id="clase-hora" class="modern-input">
+                        </div>
+                    </div>
+                    <button onclick="manejarRegistroClaseCompleto()" class="btn-admin" style="background:#f1c40f; color: black;">CREAR NUEVA CLASE</button>
+                </div>
+
+                <div class="barra-admin" onclick="toggleAcordeon('sec-ver-clases'); consultarClasesProgramadas();">Ver Clases Dadas +</div>
+                <div id="sec-ver-clases" class="bloque-admin">
+                    <div id="lista-clases-calendario">
+                        <p style="color:gray; font-size:0.8rem; text-align:center;">Cargando historial...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. GRUPO: EVALUACIÓN Y COMUNICACIÓN -->
         <div class="grupo-maestro">
             <div class="barra-maestra" style="border-left-color: #ffd700;" onclick="toggleAcordeon('grupo-comunicacion')">🎓 EVALUACIÓN Y MSG <span>▼</span></div>
             <div id="grupo-comunicacion" class="contenido-grupo">
@@ -231,17 +273,28 @@ if (window.cargarForo) window.cargarForo();
         </div>
         `;
 
-        // CARGA DE DATOS
-        if (typeof cargarSelectoresExamen === 'function') cargarSelectoresExamen();
-        if (typeof cargarSelectTecnicas === 'function') cargarSelectTecnicas(); 
-        if (typeof cargarSelectAlumnosAsistencia === 'function') cargarSelectAlumnosAsistencia();
+        // ... (tus llamadas originales)
+        if (typeof cargarSelectTecnicas === 'function') await cargarSelectTecnicas(); 
+        if (typeof cargarSelectAlumnosAsistencia === 'function') await cargarSelectAlumnosAsistencia();
         if (typeof verTablaAlumnos === 'function') verTablaAlumnos(); 
+
+        // --- TRUCO DE CLONACIÓN PARA EL CALENDARIO ---
+        // Esto copia lo que cargaron tus funciones originales en los nuevos selectores
+        const tecOrigen = document.getElementById("tecnica-id");
+        const aluOrigen = document.getElementById("alumno-asistencia-select");
+        const tecNuevo = document.getElementById("clase-tecnica-id");
+        const aluNuevo = document.getElementById("clase-alumno-usuario");
+
+        if (tecOrigen && tecNuevo) tecNuevo.innerHTML = tecOrigen.innerHTML;
+        if (aluOrigen && aluNuevo) aluNuevo.innerHTML = aluOrigen.innerHTML;
+        // ---------------------------------------------
 
     } else {
         alert("Acceso denegado.");
         cambiarSeccion('perfil');
     }
     break;
+
 
     case 'fechas':
     titulo.innerText = "Horarios de Entrenamiento";
@@ -284,10 +337,12 @@ export async function dibujarCalendarioYProgreso() {
     const barraProgreso = document.getElementById("progreso-cinta");
     const infoAdicional = document.getElementById("info-adicional");
     const displayNombre = document.getElementById("nombre-usuario-perfil");
-
-    try {
-        // 1. OBTENER DATOS (PERFIL, EXÁMENES, ASISTENCIAS)
-        const { data: userData } = await _supabase.from('perfiles').select('nombre_usuario, fecha_vencimiento, clases_base').eq('id', USUARIO_IDENTIFICADO).maybeSingle();
+  try {
+        // 1. OBTENER DATOS
+        const { data: userData } = await _supabase.from('perfiles')
+            .select('nombre_usuario, fecha_vencimiento, clases_base, cinturon') 
+            .eq('id', USUARIO_IDENTIFICADO).maybeSingle();
+        
         if (!userData) return;
         if(displayNombre) displayNombre.innerText = userData.nombre_usuario.toUpperCase();
 
@@ -295,36 +350,59 @@ export async function dibujarCalendarioYProgreso() {
         const { data: registros } = await _supabase.from('progreso_alumnos').select('created_at, id_tecnica').eq('usuario', USUARIO_IDENTIFICADO); 
         const { data: todasTecnicas } = await _supabase.from('tecnicas_maestras').select('id, nombre');
 
-        // 2. LÓGICA DE PROGRESO Y CINTA (TU LÓGICA ORIGINAL)
+          // 2. LÓGICA DE PROGRESO Y CINTA
         const totalClases = (registros ? registros.length : 0) + (userData.clases_base || 0);
-        const cintaActual = CINTAS.find(c => totalClases >= c.clases_inicio && totalClases <= c.clases_fin) || CINTAS[0];
-        const clasesEnCinta = totalClases - cintaActual.clases_inicio;
-        const gradosEnCinta = Math.min(Math.floor(clasesEnCinta / 40), 4);
+        
+        let cintaActual;
+        let gradosEnCinta;
+        let porcentajeVisual;
 
-        let porcGrado;
-        if (clasesEnCinta < 160) {
-            porcGrado = ((clasesEnCinta % 40) / 40) * 100;
+        if (userData.cinturon === "Verde") {
+            // --- LÓGICA PARA CINTURÓN VERDE ---
+            cintaActual = CINTAS.find(c => c.nombre === "Verde") || { nombre: "Verde", color: "#22c55e" };
+            
+            // Cada 40 clases sube un grado (máximo 4)
+            gradosEnCinta = Math.min(Math.floor(totalClases / 40), 4);
+            
+            // El porcentaje visual es el progreso hacia el siguiente grado
+            porcentajeVisual = ((totalClases % 40) / 40) * 100;
         } else {
-            const metaTotalCinta = cintaActual.clases_fin - cintaActual.clases_inicio;
-            const rangoFinal = metaTotalCinta - 160;
-            porcGrado = rangoFinal > 0 ? ((clasesEnCinta - 160) / rangoFinal) * 100 : 100;
-        }
-        const porcentajeVisual = Math.min(Math.max(porcGrado, 0), 100);
+            // --- LÓGICA ORIGINAL PARA ADULTOS ---
+            cintaActual = CINTAS.find(c => totalClases >= c.clases_inicio && totalClases <= c.clases_fin) || CINTAS[0];
+            const clasesEnCinta = totalClases - cintaActual.clases_inicio;
+            gradosEnCinta = Math.min(Math.floor(clasesEnCinta / 40), 4);
 
-        // 3. LÓGICA DE RACHA (TU LÓGICA ORIGINAL)
+            let porcGrado;
+            if (clasesEnCinta < 160) {
+                porcGrado = ((clasesEnCinta % 40) / 40) * 100;
+            } else {
+                const metaTotalCinta = cintaActual.clases_fin - cintaActual.clases_inicio;
+                const rangoFinal = metaTotalCinta - 160;
+                porcGrado = rangoFinal > 0 ? ((clasesEnCinta - 160) / rangoFinal) * 100 : 100;
+            }
+            porcentajeVisual = Math.min(Math.max(porcGrado, 0), 100);
+        }
+
+
+        // 3. LÓGICA DE RACHA (Mantenemos esta parte para que 'racha' exista)
         let racha = 0;
         if (registros && registros.length > 0) {
             const fechas = [...new Set(registros.map(r => r.created_at.split('T')[0]))].sort().reverse();
             const hoyIso = new Date().toISOString().split('T')[0];
             const ayerIso = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            
             if (fechas[0] === hoyIso || fechas[0] === ayerIso) {
                 racha = 1;
                 for (let i = 0; i < fechas.length - 1; i++) {
-                    const diff = (new Date(fechas[i]) - new Date(fechas[i+1])) / (1000 * 60 * 60 * 24);
+                    const d1 = new Date(fechas[i]);
+                    const d2 = new Date(fechas[i+1]);
+                    const diff = (d1 - d2) / (1000 * 60 * 60 * 24);
                     if (diff === 1) racha++; else break;
                 }
             }
         }
+        
+
 
         // ==========================================
         // CONSTRUCCIÓN DE PIEZAS HTML INDEPENDIENTES
@@ -870,3 +948,115 @@ window.verDetalleExamen = async (id) => {
         alert(detalle);
     }
 };
+// --- FUNCIONES DE GESTIÓN DE CLASES ---
+
+// 1. Función para registrar la Clase + Asistencia al alumno
+export async function manejarRegistroClaseCompleto() {
+    const ids = ['clase-nombre', 'clase-tecnica-id', 'clase-alumno-usuario', 'clase-fecha', 'clase-hora'];
+    const refs = {};
+
+    // Verificación de seguridad: comprueba que los elementos existan en el HTML
+    for (let id of ids) {
+        refs[id] = document.getElementById(id);
+        if (!refs[id]) {
+            console.error(`Error crítico: No se encontró el elemento con ID: ${id}`);
+            return;
+        }
+    }
+
+    // Validación de campos vacíos
+    if (!refs['clase-nombre'].value || !refs['clase-tecnica-id'].value || !refs['clase-alumno-usuario'].value || !refs['clase-fecha'].value || !refs['clase-hora'].value) {
+        alert("⚠️ Por favor, completa todos los campos (Nombre, Técnica, Alumno, Fecha y Hora).");
+        return;
+    }
+
+    const datos = {
+        nombre: refs['clase-nombre'].value,
+        id_tecnica: parseInt(refs['clase-tecnica-id'].value),
+        usuario_alumno: refs['clase-alumno-usuario'].value,
+        fecha: refs['clase-fecha'].value,
+        hora: refs['clase-hora'].value,
+        instructor: localStorage.getItem('usuario_logueado') || 'Admin'
+    };
+
+    try {
+        // Llama a la función en script.js
+        await window.registrarClaseYAsistencia(datos);
+        alert("✅ Clase registrada y asistencia marcada con éxito.");
+        
+        // Limpiar campos tras éxito
+        refs['clase-nombre'].value = "";
+        
+        // Actualizar la lista visual
+        await consultarClasesProgramadas();
+    } catch (e) {
+        console.error("Error al registrar:", e);
+        alert("Error al registrar: " + e.message);
+    }
+}
+
+// 2. Función para obtener y dibujar el historial de clases dadas
+export async function consultarClasesProgramadas() {
+    const contenedor = document.getElementById('lista-clases-calendario');
+    if (!contenedor) return;
+
+    try {
+        // Consultamos a Supabase (orden descendente para ver lo último primero)
+        const { data: clases, error } = await _supabase
+            .from('clases')
+            .select('*')
+            .order('fecha_hora', { ascending: false });
+
+        if (error) throw error;
+
+        if (!clases || clases.length === 0) {
+            contenedor.innerHTML = "<p style='color:gray; font-size:0.8rem; text-align:center;'>No hay historial de clases.</p>";
+            return;
+        }
+
+        // Dibujamos las tarjetas de las clases
+        contenedor.innerHTML = clases.map(clase => {
+            const fechaObj = new Date(clase.fecha_hora);
+            return `
+                <div style="background:#1a1a1a; padding:12px; border-radius:8px; margin-bottom:8px; border-left:4px solid #f1c40f; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="color:white; font-weight:bold; font-size:0.9rem;">${clase.nombre_clase}</div>
+                        <div style="color:gray; font-size:0.75rem;">
+                            📅 ${fechaObj.toLocaleDateString()} | ⏰ ${fechaObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error("Error al cargar clases:", error);
+        contenedor.innerHTML = "<p style='color:red; font-size:0.8rem;'>Error al cargar el historial.</p>";
+    }
+}
+
+// --- EXPOSICIÓN AL ÁMBITO GLOBAL ---
+window.manejarRegistroClaseCompleto = manejarRegistroClaseCompleto;
+window.consultarClasesProgramadas = consultarClasesProgramadas;
+
+// --- ADAPTADOR PARA EL CALENDARIO ---
+export async function cargarDatosCalendario() {
+    // 1. Llamamos a tus funciones de siempre para llenar los campos viejos
+    await cargarSelectTecnicas(); 
+    await cargarSelectAlumnosAsistencia();
+
+    // 2. Copiamos el contenido de los selectores viejos a los nuevos del calendario
+    const selTecnicaOriginal = document.getElementById("tecnica-id");
+    const selAlumnoOriginal = document.getElementById("alumno-asistencia-select");
+    
+    const selTecnicaNueva = document.getElementById("clase-tecnica-id");
+    const selAlumnoNuevo = document.getElementById("clase-alumno-usuario");
+
+    if (selTecnicaOriginal && selTecnicaNueva) {
+        selTecnicaNueva.innerHTML = selTecnicaOriginal.innerHTML;
+    }
+    if (selAlumnoOriginal && selAlumnoNuevo) {
+        selAlumnoNuevo.innerHTML = selAlumnoOriginal.innerHTML;
+    }
+}
+window.cargarDatosCalendario = cargarDatosCalendario;

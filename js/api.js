@@ -1,8 +1,10 @@
-import { CONFIG } from './config.js';
+// 1. Importación directa (Como lo tienes en config.js)
+import { supabaseUrl, supabaseKey } from './config.js';
 
-// Usamos los datos del llavero
-const supabaseUrl = CONFIG.supabaseUrl;
-const supabaseKey = CONFIG.supabaseKey;
+// 2. COMENTA ESTAS LÍNEAS (Son las que causan el "ReferenceError" o "SyntaxError")
+// const _supabaseUrl = CONFIG.supabaseUrl; 
+// const _supabaseKey = CONFIG.supabaseKey;
 
-// Solo aquí se crea el cliente
+// 3. Usa las variables directamente en la creación del cliente
+// Nota: He usado los nombres que vienen del import de la línea 1
 export const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
