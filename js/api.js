@@ -1,10 +1,19 @@
-// 1. Importación directa (Como lo tienes en config.js)
-import { supabaseUrl, supabaseKey } from './config.js';
+// api.js
 
-// 2. COMENTA ESTAS LÍNEAS (Son las que causan el "ReferenceError" o "SyntaxError")
-// const _supabaseUrl = CONFIG.supabaseUrl; 
-// const _supabaseKey = CONFIG.supabaseKey;
+// Usamos valores por defecto vacíos para que no lance SyntaxError en Netlify
+let supabaseUrl = '';
+let supabaseKey = '';
 
-// 3. Usa las variables directamente en la creación del cliente
-// Nota: He usado los nombres que vienen del import de la línea 1
+try {
+    // Intentamos cargar tu configuración local
+    const { CONFIG } = await import('./config.js');
+    supabaseUrl = CONFIG.supabaseUrl;
+    supabaseKey = CONFIG.supabaseKey;
+} catch (e) {
+    // Si estamos en Netlify, el archivo no existe, así que usamos las variables del sistema
+    // o las que ya tenías configuradas en el panel de Netlify
+    supabaseUrl = window.SUPABASE_URL || ''; 
+    supabaseKey = window.SUPABASE_KEY || '';
+}
+
 export const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
