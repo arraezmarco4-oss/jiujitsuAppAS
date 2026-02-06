@@ -746,7 +746,7 @@ export async function cargarSelectAlumnosAsistencia() {
     if (!select) return;
 
     try {
-        // 1. Traemos ID y nombre de todos menos del admin
+        // 1. Traemos datos de Supabase
         const { data: alumnos, error } = await _supabase
             .from('perfiles')
             .select('id, nombre_usuario')
@@ -755,10 +755,8 @@ export async function cargarSelectAlumnosAsistencia() {
 
         if (error) throw error;
 
-        // 2. Limpiamos el select completamente
+        // 2. Limpiamos y llenamos el select nativo
         select.innerHTML = '';
-
-        // 3. Insertamos las opciones (sin el placeholder manual, eso lo hace Tom Select)
         alumnos.forEach(al => {
             const option = document.createElement('option');
             option.value = al.id;
@@ -766,9 +764,20 @@ export async function cargarSelectAlumnosAsistencia() {
             select.appendChild(option);
         });
 
+        // 3. SEGURO DE CARGA PARA EL AWAIT (Promesa de espera)
+        if (typeof TomSelect === 'undefined') {
+            console.warn("TomSelect no detectado, reintentando...");
+            // ESTO es lo que arregla el error del await externo
+            return new Promise((resolve) => {
+                setTimeout(async () => {
+                    await cargarSelectAlumnosAsistencia();
+                    resolve(); 
+                }, 250);
+            });
+        }
+
         // 4. Inicializar o Actualizar Tom Select
         if (select.tomselect) {
-            // Si ya existe (SPA), actualizamos las opciones y refrescamos
             select.tomselect.clearOptions();
             const tsOptions = alumnos.map(al => ({
                 value: al.id,
@@ -776,7 +785,6 @@ export async function cargarSelectAlumnosAsistencia() {
             }));
             select.tomselect.addOptions(tsOptions);
         } else {
-            // Si es la primera vez, lo creamos
             new TomSelect("#alumno-asistencia-select", {
                 plugins: ['remove_button'],
                 placeholder: "🔍 Seleccionar uno o varios alumnos...",
@@ -793,8 +801,9 @@ export async function cargarSelectAlumnosAsistencia() {
     }
 }
 
-// Hacerla global para la SPA
+// Hacerla global
 window.cargarSelectAlumnosAsistencia = cargarSelectAlumnosAsistencia;
+
 
 
 async function marcarAsistenciaGeneral() {
@@ -872,8 +881,7 @@ async function marcarAsistenciaGeneral() {
 // Registro global para el botón del HTML
 window.marcarAsistenciaGeneral = marcarAsistenciaGeneral;
 
-// Hacerla global para que la SPA la llame
-window.cargarSelectAlumnosAsistencia = cargarSelectAlumnosAsistencia;
+
 export async function cargarSelectoresExamen() {
     const selectEvaluador = document.getElementById("evaluador-examen-select");
     const selectAlumno = document.getElementById("alumno-examen-select");
