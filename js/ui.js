@@ -137,7 +137,7 @@ if (window.cargarForo) window.cargarForo();
                 <div class="barra-admin" onclick="toggleAcordeon('sec-asistencia')">Marcar Asistencia +</div>
                 <div id="sec-asistencia" class="bloque-admin">
                     <label>Alumno:</label>
-                    <select id="alumno-asistencia-select" class="modern-input"></select>
+                    <select id="alumno-asistencia-select" class="modern-input" multiple></select>
                     <label>Técnica del día:</label>
                     <select id="tecnica-id" class="modern-input"></select>
                     <button onclick="marcarAsistenciaGeneral()" class="btn-admin" style="background:#2ecc71;">CONFIRMAR ASISTENCIA</button>
@@ -745,80 +745,127 @@ export async function cargarSelectAlumnosAsistencia() {
     const select = document.getElementById("alumno-asistencia-select");
     if (!select) return;
 
-    // Traemos ID y nombre de todos menos del admin
-    const { data: alumnos, error } = await _supabase
-        .from('perfiles')
-        .select('id, nombre_usuario')
-        .neq('nombre_usuario', 'admin')
-        .order('nombre_usuario', { ascending: true });
+    try {
+        // 1. Traemos ID y nombre de todos menos del admin
+        const { data: alumnos, error } = await _supabase
+            .from('perfiles')
+            .select('id, nombre_usuario')
+            .neq('nombre_usuario', 'admin')
+            .order('nombre_usuario', { ascending: true });
 
-    if (error) return console.error("Error al cargar alumnos:", error);
+        if (error) throw error;
 
-    select.innerHTML = '<option value="">-- Seleccionar Alumno --</option>';
-    alumnos.forEach(al => {
-        select.innerHTML += `<option value="${al.id}">${al.nombre_usuario.toUpperCase()}</option>`;
-    });
+        // 2. Limpiamos el select completamente
+        select.innerHTML = '';
+
+        // 3. Insertamos las opciones (sin el placeholder manual, eso lo hace Tom Select)
+        alumnos.forEach(al => {
+            const option = document.createElement('option');
+            option.value = al.id;
+            option.textContent = al.nombre_usuario.toUpperCase();
+            select.appendChild(option);
+        });
+
+        // 4. Inicializar o Actualizar Tom Select
+        if (select.tomselect) {
+            // Si ya existe (SPA), actualizamos las opciones y refrescamos
+            select.tomselect.clearOptions();
+            const tsOptions = alumnos.map(al => ({
+                value: al.id,
+                text: al.nombre_usuario.toUpperCase()
+            }));
+            select.tomselect.addOptions(tsOptions);
+        } else {
+            // Si es la primera vez, lo creamos
+            new TomSelect("#alumno-asistencia-select", {
+                plugins: ['remove_button'],
+                placeholder: "🔍 Seleccionar uno o varios alumnos...",
+                maxItems: null,
+                hideSelected: true,
+                render: {
+                    no_results: (data, escape) => `<div class="no-results">No se encontró a "${escape(data.input)}"</div>`
+                }
+            });
+        }
+
+    } catch (error) {
+        console.error("Error al cargar alumnos:", error);
+    }
 }
 
+// Hacerla global para la SPA
+window.cargarSelectAlumnosAsistencia = cargarSelectAlumnosAsistencia;
+
+
 async function marcarAsistenciaGeneral() {
-    // 1. VERIFICACIÓN DE SEGURIDAD (ADMIN/INSTRUCTOR)
     try {
+        // 1. SEGURIDAD (Admin/Instructor)
         const { data: perfilLogueado } = await _supabase
             .from('perfiles')
             .select('rol')
             .eq('id', USUARIO_IDENTIFICADO)
             .maybeSingle();
 
-        const rolActual = perfilLogueado?.rol?.toLowerCase().trim();
-        const rolesAutorizados = ['admin', 'instructor'];
-
-        if (!rolesAutorizados.includes(rolActual)) {
-            return alert("⛔ Acceso denegado: Solo Admin o Instructor pueden marcar asistencia.");
+        if (!['admin', 'instructor'].includes(perfilLogueado?.rol?.toLowerCase().trim())) {
+            return alert("⛔ Solo instructores pueden marcar asistencia.");
         }
 
-        // 2. CAPTURA DE DATOS DEL DOM
+        // 2. CAPTURA DE DATOS
         const selectorAlumno = document.getElementById("alumno-asistencia-select");
-        const alumnoId = selectorAlumno ? selectorAlumno.value : null;
-        const inputTecnica = document.getElementById("tecnica-id");
-        const tecValue = inputTecnica ? inputTecnica.value : null;
+        // Captura todos los IDs seleccionados como un arreglo
+        const alumnosIds = Array.from(selectorAlumno.selectedOptions).map(opt => opt.value);
+        const idTecnica = parseInt(document.getElementById("tecnica-id").value);
         
-        if (!alumnoId || !tecValue) {
-            return alert("Por favor, selecciona un alumno y una técnica de la lista.");
+        if (alumnosIds.length === 0 || isNaN(idTecnica)) {
+            return alert("Selecciona alumnos y una técnica válida.");
         }
 
-        const idTecnicaNumerico = parseInt(tecValue);
+        let resultados = { ok: 0, saltados: 0, error: 0 };
 
-        // 3. VALIDACIÓN DE LÍMITE (Máximo 3 veces por técnica)
-        const { count, error: errConteo } = await _supabase
-            .from('progreso_alumnos')
-            .select('*', { count: 'exact', head: true })
-            .eq('usuario', alumnoId)
-            .eq('id_tecnica', idTecnicaNumerico);
+        // 3. PROCESAMIENTO UNO POR UNO
+        for (const alumnoId of alumnosIds) {
+            // Verificar conteo actual para este alumno y técnica
+            const { count, error: errConteo } = await _supabase
+                .from('progreso_alumnos')
+                .select('*', { count: 'exact', head: true })
+                .eq('usuario', alumnoId)
+                .eq('id_tecnica', idTecnica);
 
-        if (errConteo) throw errConteo;
+            if (errConteo) {
+                resultados.error++;
+                continue;
+            }
 
-        if (count >= 3) {
-            return alert(`🥋 Límite alcanzado: Este alumno ya tiene las 3 asistencias para esta técnica.`);
+            // REGLA DE NEGOCIO: No marcar si ya tiene 3 o más
+            if (count >= 3) {
+                resultados.saltados++;
+                continue;
+            }
+
+            // Insertar nueva asistencia
+            const { error: errInsert } = await _supabase.from('progreso_alumnos').insert([{ 
+                usuario: alumnoId, 
+                id_tecnica: idTecnica, 
+                registrado_por: USUARIO_IDENTIFICADO 
+            }]);
+
+            if (errInsert) resultados.error++;
+            else resultados.ok++;
         }
 
-        // 4. INSERTAR ASISTENCIA
-        const { error: errInsert } = await _supabase.from('progreso_alumnos').insert([{ 
-            usuario: alumnoId, 
-            id_tecnica: idTecnicaNumerico, 
-            registrado_por: USUARIO_IDENTIFICADO 
-        }]);
-
-        if (errInsert) throw errInsert;
-
-        // 5. ÉXITO Y ACTUALIZACIÓN
-        alert(`✅ ¡Asistencia confirmada! (${count + 1} de 3 vistas)`); 
+        // 4. FEEDBACK VISUAL
+        let resumen = `Proceso completado:\n✅ ${resultados.ok} registrados`;
+        if (resultados.saltados > 0) resumen += `\n⚠️ ${resultados.saltados} ya tenían el límite de 3`;
+        if (resultados.error > 0) resumen += `\n❌ ${resultados.error} errores`;
         
-        // Llamar a la función de refrescar tabla si existe
+        alert(resumen);
+
+        // 5. REFRESCAR UI
+        if (selectorAlumno.tomselect) selectorAlumno.tomselect.clear();
         if (typeof verTablaAlumnos === 'function') verTablaAlumnos(); 
 
     } catch (err) {
-        console.error("Error en marcarAsistenciaGeneral:", err);
-        alert("❌ Error: " + (err.message || "No se pudo completar la operación"));
+        alert("❌ Error crítico: " + err.message);
     }
 }
 
