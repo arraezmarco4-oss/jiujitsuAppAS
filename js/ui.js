@@ -215,8 +215,7 @@ if (window.cargarForo) window.cargarForo();
                 
                 <div class="barra-admin" onclick="toggleAcordeon('sec-programar-clase')">Nueva Clase +</div>
                 <div id="sec-programar-clase" class="bloque-admin">
-                    <label>Nombre de la Clase:</label>
-                    <input type="text" id="clase-nombre" placeholder="Ej: Clase Matutina / Open Mat" class="modern-input">
+                    
                     
                     <label>Técnica Vista:</label>
                     <select id="clase-tecnica-id" class="modern-input">
@@ -1005,12 +1004,13 @@ window.verDetalleExamen = async (id) => {
 };
 // --- FUNCIONES DE GESTIÓN DE CLASES ---
 
-// 1. Función para registrar la Clase + Asistencia al alumno
+// 1. Función para registrar la Clase + Asistencia al alumno (Nombre automático por Técnica)
 export async function manejarRegistroClaseCompleto() {
-    const ids = ['clase-nombre', 'clase-tecnica-id', 'clase-alumno-usuario', 'clase-fecha', 'clase-hora'];
+    // Solo necesitamos estos 4 IDs ahora
+    const ids = ['clase-tecnica-id', 'clase-alumno-usuario', 'clase-fecha', 'clase-hora'];
     const refs = {};
 
-    // Verificación de seguridad: comprueba que los elementos existan en el HTML
+    // Verificación de seguridad
     for (let id of ids) {
         refs[id] = document.getElementById(id);
         if (!refs[id]) {
@@ -1019,14 +1019,18 @@ export async function manejarRegistroClaseCompleto() {
         }
     }
 
-    // Validación de campos vacíos
-    if (!refs['clase-nombre'].value || !refs['clase-tecnica-id'].value || !refs['clase-alumno-usuario'].value || !refs['clase-fecha'].value || !refs['clase-hora'].value) {
-        alert("⚠️ Por favor, completa todos los campos (Nombre, Técnica, Alumno, Fecha y Hora).");
+    // Validación de campos vacíos (sin nombre manual)
+    if (!refs['clase-tecnica-id'].value || !refs['clase-alumno-usuario'].value || !refs['clase-fecha'].value || !refs['clase-hora'].value) {
+        alert("⚠️ Por favor, selecciona Técnica, Alumno, Fecha y Hora.");
         return;
     }
 
+    // Capturamos el TEXTO de la técnica seleccionada para usarlo como NOMBRE de la clase
+    const selectorTecnica = refs['clase-tecnica-id'];
+    const nombreDeLaTecnica = selectorTecnica.options[selectorTecnica.selectedIndex].text;
+
     const datos = {
-        nombre: refs['clase-nombre'].value,
+        nombre: nombreDeLaTecnica, // Se asigna automáticamente
         id_tecnica: parseInt(refs['clase-tecnica-id'].value),
         usuario_alumno: refs['clase-alumno-usuario'].value,
         fecha: refs['clase-fecha'].value,
@@ -1035,20 +1039,18 @@ export async function manejarRegistroClaseCompleto() {
     };
 
     try {
-        // Llama a la función en script.js
+        // Llama a la función global en script.js
         await window.registrarClaseYAsistencia(datos);
-        alert("✅ Clase registrada y asistencia marcada con éxito.");
+        alert(`✅ Asistencia marcada: ${nombreDeLaTecnica}`);
         
-        // Limpiar campos tras éxito
-        refs['clase-nombre'].value = "";
-        
-        // Actualizar la lista visual
+        // Actualizar la lista visual del historial
         await consultarClasesProgramadas();
     } catch (e) {
         console.error("Error al registrar:", e);
         alert("Error al registrar: " + e.message);
     }
 }
+
 
 // 2. Función para obtener y dibujar el historial de clases dadas
 export async function consultarClasesProgramadas() {
