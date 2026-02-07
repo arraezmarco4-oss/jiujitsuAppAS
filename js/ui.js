@@ -3,12 +3,12 @@ import { USUARIO_IDENTIFICADO } from './auth.js';
 
 // 1. DEFINICIÓN DE NIVELES (Pégalo arriba de todo en ui.js)
 const CINTAS = [
-    { nombre: "Blanca", color: "#ffffff", clases_inicio: 0, clases_fin: 160 },
-     { nombre: "Verde", color: "#22c55e", clases_inicio: -100, clases_fin: -1 },
-    { nombre: "Azul", color: "#0055ff", clases_inicio: 161, clases_fin: 480 },
-    { nombre: "Morada", color: "#8b5cf6", clases_inicio: 481, clases_fin: 800 },
-    { nombre: "Marrón", color: "#5d4037", clases_inicio: 801, clases_fin: 1200 },
-    { nombre: "Negra", color: "#111111", clases_inicio: 1201, clases_fin: 9999 }
+    { nombre: "Blanca", color: "#ffffff", clases_inicio: 0, clases_fin: 200 }, // Subimos de 160 a 200
+    { nombre: "Verde", color: "#22c55e", clases_inicio: -100, clases_fin: -1 },
+    { nombre: "Azul", color: "#0055ff", clases_inicio: 201, clases_fin: 520 }, // Empieza en 201
+    { nombre: "Morada", color: "#8b5cf6", clases_inicio: 521, clases_fin: 840 },
+    { nombre: "Marrón", color: "#5d4037", clases_inicio: 841, clases_fin: 1240 },
+    { nombre: "Negra", color: "#111111", clases_inicio: 1241, clases_fin: 9999 }
 ];
 
 export async function cambiarSeccion(seccion) {
