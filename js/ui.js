@@ -1052,17 +1052,25 @@ export async function manejarRegistroClaseCompleto() {
 }
 
 
-// 2. Función para obtener y dibujar el historial de clases dadas
+e// 2. Función para obtener y dibujar el historial de clases dadas (CON ASISTENTES)
 export async function consultarClasesProgramadas() {
     const contenedor = document.getElementById('lista-clases-calendario');
     if (!contenedor) return;
 
     try {
-        // Consultamos a Supabase (orden descendente para ver lo último primero)
+        // Consultamos la tabla clases y traemos la relación de alumnos vinculados
         const { data: clases, error } = await _supabase
             .from('clases')
-            .select('*')
-            .order('fecha_hora', { ascending: false });
+            .select(`
+                id,
+                nombre_clase,
+                fecha_hora,
+                progreso_alumnos (
+                    perfiles ( nombre_usuario, cinturon )
+                )
+            `)
+            .order('fecha_hora', { ascending: false })
+            .limit(20); // Traemos las últimas 20 para mantener la velocidad
 
         if (error) throw error;
 
@@ -1071,16 +1079,32 @@ export async function consultarClasesProgramadas() {
             return;
         }
 
-        // Dibujamos las tarjetas de las clases
+        // Dibujamos las tarjetas de las clases con la lista de alumnos
         contenedor.innerHTML = clases.map(clase => {
             const fechaObj = new Date(clase.fecha_hora);
+            const asistentes = clase.progreso_alumnos || [];
+
             return `
-                <div style="background:#1a1a1a; padding:12px; border-radius:8px; margin-bottom:8px; border-left:4px solid #f1c40f; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div style="color:white; font-weight:bold; font-size:0.9rem;">${clase.nombre_clase}</div>
-                        <div style="color:gray; font-size:0.75rem;">
-                            📅 ${fechaObj.toLocaleDateString()} | ⏰ ${fechaObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                <div style="background:#1a1a1a; padding:12px; border-radius:10px; margin-bottom:10px; border-left:4px solid #f1c40f; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <div>
+                            <div style="color:white; font-weight:bold; font-size:0.9rem; text-transform:uppercase;">${clase.nombre_clase}</div>
+                            <div style="color:gray; font-size:0.75rem;">
+                                📅 ${fechaObj.toLocaleDateString()} | ⏰ ${fechaObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
                         </div>
+                        <span style="background:#f1c40f; color:black; font-size:0.65rem; padding:2px 6px; border-radius:10px; font-weight:900;">
+                            ${asistentes.length} ALUMNOS
+                        </span>
+                    </div>
+
+                    <!-- LISTA DE ALUMNOS QUE ASISTIERON -->
+                    <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; background:#000; padding:6px; border-radius:6px;">
+                        ${asistentes.map(a => `
+                            <span style="color:#eee; font-size:0.7rem; background:#222; padding:2px 6px; border-radius:4px; border-bottom: 2px solid #f1c40f;">
+                                ${a.perfiles?.nombre_usuario.toUpperCase() || 'USUARIO'}
+                            </span>
+                        `).join('') || '<span style="color:#444; font-size:0.7rem;">Sin alumnos registrados</span>'}
                     </div>
                 </div>
             `;
@@ -1095,6 +1119,7 @@ export async function consultarClasesProgramadas() {
 // --- EXPOSICIÓN AL ÁMBITO GLOBAL ---
 window.manejarRegistroClaseCompleto = manejarRegistroClaseCompleto;
 window.consultarClasesProgramadas = consultarClasesProgramadas;
+
 
 // --- ADAPTADOR PARA EL CALENDARIO ---
 export async function cargarDatosCalendario() {

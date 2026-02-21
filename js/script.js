@@ -1029,29 +1029,39 @@ export async function registrarClaseYAsistencia(datos) {
     const { nombre, fecha, hora, id_tecnica, usuario_alumno, instructor } = datos;
     const fechaHoraISO = `${fecha}T${hora}:00`;
 
-    // 1. Guarda en historial de la academia
-    const { data: claseData, error: errorClase } = await _supabase
+    // 1. Guarda la clase y OBTIENE el ID generado
+    const { data: claseCreada, error: errorClase } = await _supabase
         .from('clases')
         .insert([{ 
             nombre_clase: nombre, 
             fecha_hora: fechaHoraISO, 
             id_tecnica: id_tecnica,
             registrado_por: instructor
-        }]);
+        }])
+        .select() // Esto recupera los datos insertados
+        .single(); // Nos da el objeto de la clase específica
 
-    if (errorClase) throw errorClase;
+    if (errorClase) {
+        console.error("Error al crear clase:", errorClase);
+        throw errorClase;
+    }
 
-    // 2. Guarda en el progreso del alumno (Tabla que ya tenías)
+    // 2. Guarda el progreso vinculándolo a la clase mediante id_clase
     const { error: errorProgreso } = await _supabase
         .from('progreso_alumnos')
         .insert([{
             id_tecnica: id_tecnica,
             usuario: usuario_alumno,
-            registrado_por: instructor
+            registrado_por: instructor,
+            id_clase: claseCreada.id // <--- El vínculo que acabas de crear en SQL
         }]);
 
-    if (errorProgreso) throw errorProgreso;
+    if (errorProgreso) {
+        console.error("Error al vincular alumno:", errorProgreso);
+        throw errorProgreso;
+    }
 
-    return claseData;
+    return claseCreada;
 }
 window.registrarClaseYAsistencia = registrarClaseYAsistencia;
+
