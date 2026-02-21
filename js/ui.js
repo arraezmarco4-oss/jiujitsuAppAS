@@ -1052,7 +1052,7 @@ export async function manejarRegistroClaseCompleto() {
 }
 
 
-e// 2. Función para obtener y dibujar el historial de clases dadas (CON ASISTENTES)
+// 2. Función para obtener y dibujar el historial de clases dadas (CON ASISTENTES)
 export async function consultarClasesProgramadas() {
     const contenedor = document.getElementById('lista-clases-calendario');
     if (!contenedor) return;
